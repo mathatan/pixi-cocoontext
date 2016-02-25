@@ -205,6 +205,8 @@ Object.defineProperties(CocoonText.prototype, {
             style.dropShadowColor = value.dropShadowColor || '#000000';
             style.dropShadowAngle = value.dropShadowAngle || Math.PI / 6;
             style.dropShadowDistance = value.dropShadowDistance || 5;
+            style.dropShadowBlur = value.dropShadowBlur || 0;
+            style.dropShadowStrength = value.dropShadowStrength || 1;
 
             style.padding = value.padding || 0;
 
@@ -237,6 +239,8 @@ Object.defineProperties(CocoonText.prototype, {
                 dropShadowColor : style.dropShadowColor,
                 dropShadowAngle : style.dropShadowAngle,
                 dropShadowDistance : Math.round(style.dropShadowDistance*this.resolution),
+                dropShadowBlur : style.dropShadowBlur || 0,
+                dropShadowStrength : style.dropShadowStrength || 1,
                 padding : Math.round(style.padding*this.resolution),
                 textBaseline : style.textBaseline,
                 lineJoin : style.lineJoin,
@@ -413,7 +417,38 @@ CocoonText.prototype.updateText = function ()
 
                 if (style.fill)
                 {
-                    this.context.fillText(lines[i], linePositionX + xShadowOffset, linePositionY + yShadowOffset + style.padding);
+                    if (style.dropShadowBlur) {
+                        var total = 16;
+                        var half = style.dropShadowBlur / this.resolution;
+                        this.context.globalAlpha = (1 / total / 2) * style.dropShadowStrength;
+                        var blur;
+                        for (var j = 0; j <= total; j++) {
+                            blur = ((-style.dropShadowBlur + (style.dropShadowBlur * j / total)) * 2 + style.dropShadowBlur) / this.resolution;
+                            
+                            this.context.fillText(lines[i], 
+                                linePositionX + xShadowOffset + blur, 
+                                linePositionY + yShadowOffset + style.padding - half 
+                            );
+
+                            this.context.fillText(lines[i], 
+                                linePositionX + xShadowOffset - half, 
+                                linePositionY + yShadowOffset + style.padding + blur 
+                            );
+
+                            this.context.fillText(lines[i], 
+                                linePositionX + xShadowOffset + blur, 
+                                linePositionY + yShadowOffset + style.padding + half
+                            );
+
+                            this.context.fillText(lines[i], 
+                                linePositionX + xShadowOffset + half, 
+                                linePositionY + yShadowOffset + style.padding + blur 
+                            );                            
+                        }
+                        this.context.globalAlpha = 1;
+                    } else {
+                        this.context.fillText(lines[i], linePositionX + xShadowOffset, linePositionY + yShadowOffset + style.padding);
+                    }
                 }
             }
         }
