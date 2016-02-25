@@ -213,6 +213,16 @@ Object.defineProperties(CocoonText.prototype, {
             style.lineJoin = value.lineJoin || 'miter';
             style.miterLimit = value.miterLimit || 10;
 
+            if (typeof style.fill === 'object') {
+                style.fill = this.gradientFill(style.fill);
+            } 
+            if (typeof style.stroke === 'object') {
+                style.stroke = this.gradientFill(style.stroke);
+            } 
+            if (typeof style.dropShadowColor === 'object') {
+                style.dropShadowColor = this.gradientFill(style.dropShadowColor);
+            } 
+
             //multiply the font style by the resolution
             //TODO : warn if font size not in px unit
             this._generatedStyle = {
@@ -439,6 +449,25 @@ CocoonText.prototype.updateText = function ()
     }
 
     this.updateTexture();
+};
+
+CocoonText.prototype.gradientFill = function (options) 
+{
+    var width = this.canvas.width / this.resolution,
+        height = this.canvas.height / this.resolution;
+    if (options.vertical) {
+        height = 0;
+    } else {
+        width = 0;
+    }
+
+    var gradient = this.context.createLinearGradient(0, 0, width, height);
+
+    for (var i = 0, iLen = options.stops.length; i < iLen; i++) {
+        gradient.addColorStop(options.stops[i].stop, options.stops[i].color);
+    }
+
+    return gradient;
 };
 
 /**
