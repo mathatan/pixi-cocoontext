@@ -194,6 +194,7 @@ Object.defineProperties(CocoonText.prototype, {
         {
             var style = {};
             style.font = value.font || 'bold 20px Arial';
+            style.lineHeight = (typeof value.lineHeight !== 'undefined') ? (value.lineHeight * this.resolution) : (undefined);
             style.fill = value.fill || 'black';
             style.align = value.align || 'left';
             style.stroke = value.stroke || 'black'; //provide a default, see: https://github.com/GoodBoyDigital/pixi.js/issues/136
@@ -215,20 +216,11 @@ Object.defineProperties(CocoonText.prototype, {
             style.lineJoin = value.lineJoin || 'miter';
             style.miterLimit = value.miterLimit || 10;
 
-            if (typeof style.fill === 'object') {
-                style.fill = this.gradientFill(style.fill);
-            } 
-            if (typeof style.stroke === 'object') {
-                style.stroke = this.gradientFill(style.stroke);
-            } 
-            if (typeof style.dropShadowColor === 'object') {
-                style.dropShadowColor = this.gradientFill(style.dropShadowColor);
-            } 
-
             //multiply the font style by the resolution
             //TODO : warn if font size not in px unit
             this._generatedStyle = {
                 font : style.font.replace(/[0-9]+/,Math.round(parseInt(style.font.match(/[0-9]+/)[0],10)*this.resolution)),
+                lineHeight : style.lineHeight,
                 fill : style.fill,
                 align : style.align,
                 stroke : style.stroke,
@@ -384,8 +376,14 @@ CocoonText.prototype.updateText = function ()
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
         }
 
+        var stroke = style.stroke;
+        if (typeof stroke === 'object') {
+            stroke = this.gradientFill(stroke, width, lineHeight + style.strokeThickness);
+        }
+
+
         this.context.font = style.font;
-        this.context.strokeStyle = style.stroke;
+        this.context.strokeStyle = stroke;
         this.context.lineWidth = style.strokeThickness;
         this.context.textBaseline = style.textBaseline;
         this.context.lineJoin = style.lineJoin;
@@ -396,7 +394,12 @@ CocoonText.prototype.updateText = function ()
 
         if (style.dropShadow)
         {
-            this.context.fillStyle = style.dropShadowColor;
+            var dropShadowColor = style.dropShadowColor;
+            if (typeof dropShadowColor === 'object') {
+                dropShadowColor = this.gradientFill(dropShadowColor, width, lineHeight + style.strokeThickness + style.dropShadowDistance);
+            }            
+
+            this.context.fillStyle = dropShadowColor;
 
             var xShadowOffset = Math.cos(style.dropShadowAngle) * style.dropShadowDistance;
             var yShadowOffset = Math.sin(style.dropShadowAngle) * style.dropShadowDistance;
@@ -419,31 +422,31 @@ CocoonText.prototype.updateText = function ()
                 {
                     if (style.dropShadowBlur) {
                         var total = 16;
-                        var half = style.dropShadowBlur / this.resolution;
+                        var totalBlur = style.dropShadowBlur * this.resolution;
                         this.context.globalAlpha = (1 / total / 2) * style.dropShadowStrength;
                         var blur;
                         for (var j = 0; j <= total; j++) {
-                            blur = ((-style.dropShadowBlur + (style.dropShadowBlur * j / total)) * 2 + style.dropShadowBlur) / this.resolution;
-                            
-                            this.context.fillText(lines[i], 
-                                linePositionX + xShadowOffset + blur, 
-                                linePositionY + yShadowOffset + style.padding - half 
+                            blur = ((-style.dropShadowBlur + (style.dropShadowBlur * j / total)) * 2 + style.dropShadowBlur) * this.resolution;
+
+                            this.context.fillText(lines[i],
+                                linePositionX + xShadowOffset + blur,
+                                linePositionY + yShadowOffset + style.padding - totalBlur
                             );
 
-                            this.context.fillText(lines[i], 
-                                linePositionX + xShadowOffset - half, 
-                                linePositionY + yShadowOffset + style.padding + blur 
+                            this.context.fillText(lines[i],
+                                linePositionX + xShadowOffset - totalBlur,
+                                linePositionY + yShadowOffset + style.padding + blur
                             );
 
-                            this.context.fillText(lines[i], 
-                                linePositionX + xShadowOffset + blur, 
-                                linePositionY + yShadowOffset + style.padding + half
+                            this.context.fillText(lines[i],
+                                linePositionX + xShadowOffset + blur,
+                                linePositionY + yShadowOffset + style.padding + totalBlur
                             );
 
-                            this.context.fillText(lines[i], 
-                                linePositionX + xShadowOffset + half, 
-                                linePositionY + yShadowOffset + style.padding + blur 
-                            );                            
+                            this.context.fillText(lines[i],
+                                linePositionX + xShadowOffset + totalBlur,
+                                linePositionY + yShadowOffset + style.padding + blur
+                            );
                         }
                         this.context.globalAlpha = 1;
                     } else {
@@ -453,8 +456,19 @@ CocoonText.prototype.updateText = function ()
             }
         }
 
+
+        var fill = style.fill;
+        if (typeof fill === 'object') {
+            fill = this.gradientFill(
+                fill, 
+                width, 
+                lineHeight, 
+                style.strokeThickness + style.padding
+            );
+        }
+
         //set canvas text styles
-        this.context.fillStyle = style.fill;
+        this.context.fillStyle = fill;
 
         //draw lines line by line
         for (i = 0; i < lines.length; i++)
@@ -486,17 +500,24 @@ CocoonText.prototype.updateText = function ()
     this.updateTexture();
 };
 
-CocoonText.prototype.gradientFill = function (options) 
+CocoonText.prototype.gradientFill = function (options, width, height, padding)
 {
-    var width = this.canvas.width / this.resolution,
-        height = this.canvas.height / this.resolution;
+    padding = padding || 0;
+    width = width + padding;
+    height = height + padding;
+
+    var paddingX, paddingY;
+    paddingX = paddingY = padding;
+
     if (options.vertical) {
         height = 0;
+        paddingY = 0;
     } else {
         width = 0;
+        paddingX = 0;
     }
 
-    var gradient = this.context.createLinearGradient(0, 0, width, height);
+    var gradient = this.context.createLinearGradient(paddingX, paddingY, width, height);
 
     for (var i = 0, iLen = options.stops.length; i < iLen; i++) {
         gradient.addColorStop(options.stops[i].stop, options.stops[i].color);
