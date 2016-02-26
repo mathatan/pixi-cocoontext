@@ -19,17 +19,20 @@ var CONST = require('../CocoonTextUtil');
  * @param text {string} The copy that you would like the text to display
  * @param [style] {object} The style parameters
  * @param [style.font] {string} default 'bold 20px Arial' The style and size of the font
- * @param [style.fill='black'] {String|Number} A canvas fillstyle that will be used on the text e.g 'red', '#00FF00'
+ * @param [style.fill='black'] {String|Number|Object} A canvas fillstyle that will be used on the text e.g 'red', '#00FF00',
+ *      or object for gradients '{vertical: false, stops : [{stop: 0 , color: '#000'}, {stop: 1, color: '#FFF']}'
  * @param [style.align='left'] {string} Alignment for multiline text ('left', 'center' or 'right'), does not affect single line text
- * @param [style.stroke] {String|Number} A canvas fillstyle that will be used on the text stroke e.g 'blue', '#FCFF00'
+ * @param [style.stroke] {String|Number|Object} A canvas fillstyle that will be used on the text stroke, see 'fill' for details
  * @param [style.strokeThickness=0] {number} A number that represents the thickness of the stroke. Default is 0 (no stroke)
  * @param [style.wordWrap=false] {boolean} Indicates if word wrap should be used
  * @param [style.wordWrapWidth=100] {number} The width at which text will wrap, it needs wordWrap to be set to true
  * @param [style.lineHeight] {number} The line height, a number that represents the vertical space that a letter uses
  * @param [style.dropShadow=false] {boolean} Set a drop shadow for the text
- * @param [style.dropShadowColor='#000000'] {string} A fill style to be used on the dropshadow e.g 'red', '#00FF00'
+ * @param [style.dropShadowColor='#000000'] {String|Number|Object} A fill style to be used on the dropshadow, see 'fill' for details
  * @param [style.dropShadowAngle=Math.PI/4] {number} Set a angle of the drop shadow
  * @param [style.dropShadowDistance=5] {number} Set a distance of the drop shadow
+ * @param [style.dropShadowBlur=0] {number} How much drop shadow should be blurred, 0 disables blur
+ * @param [style.dropShadowStrength=1] {number} Set the opacity of drop shadow when blurring
  * @param [style.padding=0] {number} Occasionally some fonts are cropped. Adding some padding will prevent this from happening
  * @param [style.textBaseline='alphabetic'] {string} The baseline of the text that is rendered.
  * @param [style.lineJoin='miter'] {string} The lineJoin property sets the type of corner created, it can resolve
@@ -166,17 +169,20 @@ Object.defineProperties(CocoonText.prototype, {
      *
      * @param [value] {object} The style parameters
      * @param [value.font='bold 20pt Arial'] {string} The style and size of the font
-     * @param [value.fill='black'] {object} A canvas fillstyle that will be used on the text eg 'red', '#00FF00'
+     * @param [value.fill='black'] {String|Number|Object} A canvas fillstyle that will be used on the text e.g 'red', '#00FF00',
+     *      or object for gradients '{vertical: false, stops : [{stop: 0 , color: '#000'}, {stop: 1, color: '#FFF']}'
      * @param [value.align='left'] {string} Alignment for multiline text ('left', 'center' or 'right'), does not affect single line text
-     * @param [value.stroke='black'] {string} A canvas fillstyle that will be used on the text stroke eg 'blue', '#FCFF00'
+     * @param [value.stroke='black'] {String|Number|Object} A canvas fillstyle that will be used on the text stroke, see 'fill' for details
      * @param [value.strokeThickness=0] {number} A number that represents the thickness of the stroke. Default is 0 (no stroke)
      * @param [value.wordWrap=false] {boolean} Indicates if word wrap should be used
      * @param [value.wordWrapWidth=100] {number} The width at which text will wrap
      * @param [value.lineHeight] {number} The line height, a number that represents the vertical space that a letter uses
      * @param [value.dropShadow=false] {boolean} Set a drop shadow for the text
-     * @param [value.dropShadowColor='#000000'] {string} A fill style to be used on the dropshadow e.g 'red', '#00FF00'
+     * @param [value.dropShadowColor='#000000'] {String|Number|Object} A fill style to be used on the dropshadow, see 'fill' for details
      * @param [value.dropShadowAngle=Math.PI/6] {number} Set a angle of the drop shadow
      * @param [value.dropShadowDistance=5] {number} Set a distance of the drop shadow
+     * @param [value.dropShadowBlur=0] {number} How much drop shadow should be blurred, 0 disables blur
+     * @param [value.dropShadowStrength=1] {number} Set the opacity of drop shadow when blurring
      * @param [value.padding=0] {number} Occasionally some fonts are cropped. Adding some padding will prevent this from happening
      * @param [value.textBaseline='alphabetic'] {string} The baseline of the text that is rendered.
      * @param [value.lineJoin='miter'] {string} The lineJoin property sets the type of corner created, it can resolve
@@ -397,7 +403,7 @@ CocoonText.prototype.updateText = function ()
             var dropShadowColor = style.dropShadowColor;
             if (typeof dropShadowColor === 'object') {
                 dropShadowColor = this.gradientFill(dropShadowColor, width, lineHeight + style.strokeThickness + style.dropShadowDistance);
-            }            
+            }
 
             this.context.fillStyle = dropShadowColor;
 
@@ -460,9 +466,9 @@ CocoonText.prototype.updateText = function ()
         var fill = style.fill;
         if (typeof fill === 'object') {
             fill = this.gradientFill(
-                fill, 
-                width, 
-                lineHeight, 
+                fill,
+                width,
+                lineHeight,
                 style.strokeThickness + style.padding
             );
         }
