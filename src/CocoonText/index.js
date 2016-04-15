@@ -421,45 +421,55 @@ CocoonText.prototype.updateText = function ()
                 dropShadowColor = this.gradientFill(dropShadowColor, width, lineHeight + style.strokeThickness + style.dropShadowDistance);
             }
 
-            this.context.fillStyle = dropShadowColor;
+            //this.context.fillStyle = dropShadowColor;
 
             var xShadowOffset = Math.cos(style.dropShadowAngle) * style.dropShadowDistance / this.resolution;
             var yShadowOffset = Math.sin(style.dropShadowAngle) * style.dropShadowDistance / this.resolution;
 
-            for (i = 0; i < lines.length; i++)
-            {
-                linePositionX = style.strokeThickness / 2;
-                linePositionY = (style.strokeThickness / 2 + i * lineHeight) + fontProperties.ascent;
+            this.context.shadowColor = dropShadowColor;
+            this.context.shadowOffsetX = xShadowOffset; 
+            this.context.shadowOffsetY = yShadowOffset; 
 
-                if (style.align === 'right')
-                {
-                    linePositionX += maxLineWidth - lineWidths[i];
-                }
-                else if (style.align === 'center')
-                {
-                    linePositionX += (maxLineWidth - lineWidths[i]) / 2;
-                }
-
-                if (style.fill) {
-                    if (style.dropShadowStroke) {
-                        this.context.strokeStyle = dropShadowColor;
-                        this.context.lineWidth = style.dropShadowStroke / this.resolution;                        
-                    }
-
-                    this.context.globalAlpha = style.dropShadowStrength;
-                    if (style.dropShadowStroke) {
-                        this.context.strokeText(lines[i], linePositionX + xShadowOffset, linePositionY + yShadowOffset + style.padding);
-                    } 
-
-                    this.context.fillText(lines[i], linePositionX + xShadowOffset, linePositionY + yShadowOffset + style.padding);
-
-                    this.context.globalAlpha = 1;
-
-                    if (style.dropShadowBlur) {
-                        this.blur(2, style.dropShadowBlur, 1);
-                    }
-                }
+            if (style.dropShadowBlur) {
+                this.context.shadowBlur = style.dropShadowBlur * this.resolution * 2;
             }
+
+            // for (i = 0; i < lines.length; i++)
+            // {
+            //     linePositionX = style.strokeThickness / 2;
+            //     linePositionY = (style.strokeThickness / 2 + i * lineHeight) + fontProperties.ascent;
+            //
+            //     if (style.align === 'right')
+            //     {
+            //         linePositionX += maxLineWidth - lineWidths[i];
+            //     }
+            //     else if (style.align === 'center')
+            //     {
+            //         linePositionX += (maxLineWidth - lineWidths[i]) / 2;
+            //     }
+            //
+            //     if (style.fill) {
+            //         if (style.dropShadowStroke) {
+            //             this.context.strokeStyle = dropShadowColor;
+            //             this.context.lineWidth = style.dropShadowStroke / this.resolution;                        
+            //         }
+            //
+            //         this.context.globalAlpha = style.dropShadowStrength;
+            //         if (style.dropShadowStroke) {
+            //             this.context.strokeText(lines[i], linePositionX + xShadowOffset, linePositionY + yShadowOffset + style.padding);
+            //         } 
+            //
+            //         this.context.fillText(lines[i], linePositionX + xShadowOffset, linePositionY + yShadowOffset + style.padding);
+            //
+            //         this.context.globalAlpha = 1;
+            //
+            //         if (style.dropShadowBlur) {
+            //             this.blur(2, style.dropShadowBlur, 1);
+            //         }
+            //     }
+            // }
+        } else {
+            this.context.shadowColor = undefined;
         }
 
         var stroke = style.stroke;
