@@ -427,8 +427,8 @@ CocoonText.prototype.updateText = function ()
             var yShadowOffset = Math.sin(style.dropShadowAngle) * style.dropShadowDistance / this.resolution;
 
             this.context.shadowColor = dropShadowColor;
-            this.context.shadowOffsetX = xShadowOffset; 
-            this.context.shadowOffsetY = yShadowOffset; 
+            this.context.shadowOffsetX = xShadowOffset;
+            this.context.shadowOffsetY = yShadowOffset;
 
             if (style.dropShadowBlur) {
                 this.context.shadowBlur = style.dropShadowBlur * this.resolution * 2;
@@ -451,13 +451,13 @@ CocoonText.prototype.updateText = function ()
             //     if (style.fill) {
             //         if (style.dropShadowStroke) {
             //             this.context.strokeStyle = dropShadowColor;
-            //             this.context.lineWidth = style.dropShadowStroke / this.resolution;                        
+            //             this.context.lineWidth = style.dropShadowStroke / this.resolution;
             //         }
             //
             //         this.context.globalAlpha = style.dropShadowStrength;
             //         if (style.dropShadowStroke) {
             //             this.context.strokeText(lines[i], linePositionX + xShadowOffset, linePositionY + yShadowOffset + style.padding);
-            //         } 
+            //         }
             //
             //         this.context.fillText(lines[i], linePositionX + xShadowOffset, linePositionY + yShadowOffset + style.padding);
             //
@@ -479,7 +479,7 @@ CocoonText.prototype.updateText = function ()
 
         this.context.strokeStyle = stroke;
         this.context.lineWidth = style.strokeThickness;
- 
+
 
         var fill = style.fill;
         if (typeof fill === 'object') {
@@ -559,7 +559,7 @@ CocoonText.prototype.blur = function (iterations, strength, alpha) {
     var context = newCanvas.getContext('2d');
     newCanvas.width = this.canvas.width;
     newCanvas.height = this.canvas.height;
-    context.drawImage(this.canvas, 0, 0);    
+    context.drawImage(this.canvas, 0, 0);
 
     var oldAlpha = this.context.globalAlpha;
     this.context.globalAlpha = alpha / (iterations * 4);
@@ -583,7 +583,7 @@ CocoonText.prototype.blur = function (iterations, strength, alpha) {
                 x -= offset;
             break;
         }
-        this.context.drawImage(newCanvas, x, y);        
+        this.context.drawImage(newCanvas, x, y);
     }
 
     this.context.globalAlpha = oldAlpha;
@@ -607,14 +607,14 @@ CocoonText.prototype.updateTexture = function ()
         texture.baseTexture.height = this.canvas.height / this.resolution;
     }
 
-    texture.crop.width = texture._frame.width = this.canvas.width / this.resolution;
-    texture.crop.height = texture._frame.height = this.canvas.height / this.resolution;
+    texture.orig.width = texture._frame.width = this.canvas.width / this.resolution;
+    texture.orig.height = texture._frame.height = this.canvas.height / this.resolution;
 
     texture.trim.x = 0;
     texture.trim.y = -this._style.padding;
 
     texture.trim.width = texture._frame.width;
-    texture.trim.height = texture._frame.height - this._style.padding*2;
+    texture.trim.height = texture._frame.height; //- this._style.padding*2;
 
     this._width = this.canvas.width / this.resolution;
     this._height = this.canvas.height / this.resolution;
