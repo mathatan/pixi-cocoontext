@@ -78,27 +78,6 @@ function CocoonText(text, style, resolution)
      */
     this._style = null;
 
-    /**
-     * Private tracker for the generated style.
-     *
-     * @member {object}
-     * @private
-     */
-    this._generatedStyle = null;
-
-    if (typeof style.font !== 'undefined') { style.font = (style.font.replace(/[0-9\.]+/,(parseFloat(style.font.match(/[0-9\.]+/)[0])).toFixed(0))); }
-
-    if (typeof style.dropShadowAngle === 'number') { style.dropShadowAngle = (Math.round(1000 * style.dropShadowAngle) / 1000); }
-    if (typeof style.dropShadowBlur === 'number') { style.dropShadowBlur = (Math.round(1000 * style.dropShadowBlur) / 1000); }
-    if (typeof style.dropShadowDistance === 'number') { style.dropShadowDistance = (Math.round(1000 * style.dropShadowDistance) / 1000); }
-    if (typeof style.dropShadowStrength === 'number') { style.dropShadowStrength = (Math.round(1000 * style.dropShadowStrength) / 1000); }
-    if (typeof style.dropShadowStroke === 'number') { style.dropShadowStroke = (Math.round(1000 * style.dropShadowStroke) / 1000); }
-    if (typeof style.lineHeight === 'number') { style.lineHeight = (Math.round(1000 * style.lineHeight) / 1000); }
-    if (typeof style.miterLimit === 'number') { style.miterLimit = (Math.round(1000 * style.miterLimit) / 1000); }
-    if (typeof style.padding === 'number') { style.padding = (Math.round(1000 * style.padding) / 1000); }
-    if (typeof style.strokeThickness === 'number') { style.strokeThickness = (Math.round(1000 * style.strokeThickness) / 1000); }
-    if (typeof style.wordWrapWidth === 'number') { style.wordWrapWidth = (Math.round(1000 * style.wordWrapWidth) / 1000); }
-
     this._pixiId = text + JSON.stringify(style) + this.resolution;
 
     var baseTexture = PIXI.utils.BaseTextureCache[this._pixiId];
@@ -214,65 +193,27 @@ Object.defineProperties(CocoonText.prototype, {
         },
         set: function (value)
         {
-            var style = {};
-            style.font = value.font || 'bold 20px Arial';
-            style.lineHeight = (typeof value.lineHeight !== 'undefined') ? (value.lineHeight * this.resolution) : (undefined);
-            style.fill = value.fill || 'black';
-            style.align = value.align || 'left';
-            style.stroke = value.stroke || 'black'; //provide a default, see: https://github.com/GoodBoyDigital/pixi.js/issues/136
-            style.strokeThickness = value.strokeThickness || 0;
-            style.wordWrap = value.wordWrap || false;
-            style.wordWrapWidth = value.wordWrapWidth || 100;
 
-            style.dropShadow = value.dropShadow || false;
-            style.dropShadowColor = value.dropShadowColor || '#000000';
-            style.dropShadowAngle = value.dropShadowAngle || Math.PI / 6;
-            style.dropShadowDistance = value.dropShadowDistance || 5;
-            style.dropShadowBlur = value.dropShadowBlur || 0;
-            style.dropShadowStrength = value.dropShadowStrength || 1;
-            style.dropShadowStroke = value.dropShadowStroke || 0;
+            var oldStyle = this._style;
 
-            style.padding = value.padding || 0;
-
-            style.textBaseline = value.textBaseline || 'alphabetic';
-
-            style.lineJoin = value.lineJoin || 'miter';
-            style.miterLimit = value.miterLimit || 10;
-
-            var oldStyle = JSON.stringify(this._generatedStyle);
-
-            //multiply the font style by the resolution
-            //TODO : warn if font size not in px unit
-            this._generatedStyle = {
-                font : (style.font || '').replace(/[0-9\.]+/,(parseFloat(style.font.match(/[0-9\.]+/)[0]) * this.resolution).toFixed(0)),
-                lineHeight : style.lineHeight,
-                fill : style.fill,
-                align : style.align,
-                stroke : style.stroke,
-                strokeThickness : Math.round(style.strokeThickness*this.resolution),
-                wordWrap : style.wordWrap,
-                wordWrapWidth : Math.round(style.wordWrapWidth*this.resolution),
-                dropShadow : style.dropShadow,
-                dropShadowColor : style.dropShadowColor,
-                dropShadowAngle : style.dropShadowAngle,
-                dropShadowDistance : Math.round(style.dropShadowDistance*this.resolution),
-                dropShadowBlur : style.dropShadowBlur || 0,
-                dropShadowStrength : style.dropShadowStrength || 1,
-                dropShadowStroke : style.dropShadowStroke || 0,
-                padding : Math.round(style.padding*this.resolution),
-                textBaseline : style.textBaseline,
-                lineJoin : style.lineJoin,
-                miterLimit : style.miterLimit
-            };
-
-            if (JSON.stringify(this._generatedStyle) !== oldStyle)
+            var style = style || {};
+            if (value instanceof PIXI.TextStyle)
             {
+                this._style = value;
+            }
+            else
+            {
+                this._style = new PIXI.TextStyle(style);
+            }
+
+            if (oldStyle !== this._style || this._style.styleID !== this._styleID) {
+                this._styleID = this._style.styleID;
+
                 if (this._style !== null)
                 {
-                    this.prepareUpdateText(this._text,value);
+                    this.prepareUpdateText(this._text,this._style);
                 }
 
-                this._style = style;
                 this.dirty = true;
             }
         }
@@ -332,7 +273,13 @@ CocoonText.prototype.switchCanvas = function ()
         //there is a cached text for these parameters
         this.canvas = baseTexture.source;
         this.context = this.canvas.getContext('2d');
-        texture = textureCache[this._pixiId];
+        if (typeof textureCache[this._pixiId] !== 'undefined') {
+            texture = textureCache[this._pixiId];
+        } else {
+            texture = PIXI.Texture.fromCanvas(this.canvas);
+            texture.trim = new PIXI.Rectangle();
+            textureCache[this._pixiId] = texture;
+        }
 
         this.cacheDirty = false;
     }
@@ -366,8 +313,10 @@ CocoonText.prototype.updateText = function ()
     }
     if (this.cacheDirty)
     {
-        var style = this._generatedStyle;
-        this.context.font = style.font;
+        var style = this._style;
+        var fontSizeString = (typeof style.fontSize === 'number') ? style.fontSize * this.resolution + 'px' : style.fontSize;
+        var fontStyle = style.fontStyle + ' ' + style.fontVariant + ' ' + style.fontWeight + ' ' + fontSizeString + ' ' + style.fontFamily;
+        this.context.font = fontStyle;
 
         // word wrap
         // preserve original text
@@ -379,7 +328,7 @@ CocoonText.prototype.updateText = function ()
         // calculate text width
         var lineWidths = new Array(lines.length);
         var maxLineWidth = 0;
-        var fontProperties = this.determineFontProperties(style.font);
+        var fontProperties = this.determineFontProperties(style);
         for (var i = 0; i < lines.length; i++)
         {
             var lineWidth = this.context.measureText(lines[i]).width;
@@ -387,32 +336,34 @@ CocoonText.prototype.updateText = function ()
             maxLineWidth = Math.max(maxLineWidth, lineWidth);
         }
 
-        var width = maxLineWidth + style.strokeThickness;
+        var width = maxLineWidth + style.strokeThickness * this.resolution;
         if (style.dropShadow)
         {
-            width += style.dropShadowDistance;
+            width += style.dropShadowDistance * this.resolution;
         }
 
         this.canvas.width = ( width + this.context.lineWidth );
 
         // calculate text height
-        var lineHeight = this.style.lineHeight || fontProperties.fontSize + style.strokeThickness;
+        var lineHeight = this.style.lineHeight  * this.resolution || fontProperties.fontSize + style.strokeThickness * this.resolution;
 
         var height = lineHeight * lines.length;
         if (style.dropShadow)
         {
-            height += style.dropShadowDistance;
+            height += style.dropShadowDistance * this.resolution;
         }
 
-        this.canvas.height = ( height + style.padding * 2 );
+        this.canvas.height = ( height + style.padding * 2 * this.resolution );
 
         if (navigator.isCocoonJS)
         {
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
         }
 
+        fontSizeString = (typeof style.fontSize === 'number') ? style.fontSize * this.resolution + 'px' : style.fontSize;
+        fontStyle = style.fontStyle + ' ' + style.fontVariant + ' ' + style.fontWeight + ' ' + fontSizeString + ' ' + style.fontFamily;
 
-        this.context.font = style.font;
+        this.context.font = fontStyle;
         this.context.textBaseline = style.textBaseline;
         this.context.lineJoin = style.lineJoin;
         this.context.miterLimit = style.miterLimit;
@@ -424,11 +375,15 @@ CocoonText.prototype.updateText = function ()
         {
             var dropShadowColor = style.dropShadowColor;
             if (typeof dropShadowColor === 'object') {
-                dropShadowColor = this.gradientFill(dropShadowColor, width, lineHeight + style.strokeThickness + style.dropShadowDistance);
+                dropShadowColor = this.gradientFill(
+                    dropShadowColor,
+                    width,
+                    lineHeight + style.strokeThickness * this.resolution + style.dropShadowDistance * this.resolution
+                );
             }
 
-            var xShadowOffset = Math.cos(style.dropShadowAngle) * style.dropShadowDistance / this.resolution;
-            var yShadowOffset = Math.sin(style.dropShadowAngle) * style.dropShadowDistance / this.resolution;
+            var xShadowOffset = Math.cos(style.dropShadowAngle) * style.dropShadowDistance;
+            var yShadowOffset = Math.sin(style.dropShadowAngle) * style.dropShadowDistance;
 
             this.context.shadowColor = dropShadowColor;
             this.context.shadowOffsetX = xShadowOffset;
@@ -444,11 +399,11 @@ CocoonText.prototype.updateText = function ()
 
         var stroke = style.stroke;
         if (typeof stroke === 'object') {
-            stroke = this.gradientFill(stroke, width, lineHeight + style.strokeThickness);
+            stroke = this.gradientFill(stroke, width, lineHeight + style.strokeThickness * this.resolution);
         }
 
         this.context.strokeStyle = stroke;
-        this.context.lineWidth = style.strokeThickness;
+        this.context.lineWidth = style.strokeThickness * this.resolution;
 
 
         var fill = style.fill;
@@ -457,7 +412,7 @@ CocoonText.prototype.updateText = function ()
                 fill,
                 width,
                 lineHeight,
-                style.strokeThickness + style.padding
+                style.strokeThickness * this.resolution + style.padding * this.resolution
             );
         }
 
@@ -467,8 +422,8 @@ CocoonText.prototype.updateText = function ()
         //draw lines line by line
         for (i = 0; i < lines.length; i++)
         {
-            linePositionX = style.strokeThickness / 2;
-            linePositionY = (style.strokeThickness / 2 + i * lineHeight) + fontProperties.ascent;
+            linePositionX = style.strokeThickness * this.resolution / 2;
+            linePositionY = (style.strokeThickness * this.resolution / 2 + i * lineHeight) + fontProperties.ascent;
 
             if (style.align === 'right')
             {
@@ -481,12 +436,12 @@ CocoonText.prototype.updateText = function ()
 
             if (style.stroke && style.strokeThickness)
             {
-                this.context.strokeText(lines[i], linePositionX, linePositionY + style.padding);
+                this.context.strokeText(lines[i], linePositionX, linePositionY + style.padding * this.resolution);
             }
 
             if (style.fill)
             {
-                this.context.fillText(lines[i], linePositionX, linePositionY + style.padding);
+                this.context.fillText(lines[i], linePositionX, linePositionY + style.padding * this.resolution);
             }
         }
     }
@@ -513,8 +468,17 @@ CocoonText.prototype.gradientFill = function (options, width, height, padding)
 
     var gradient = this.context.createLinearGradient(paddingX, paddingY, width, height);
 
-    for (var i = 0, iLen = options.stops.length; i < iLen; i++) {
-        gradient.addColorStop(options.stops[i].stop, options.stops[i].color);
+    var i, iLen;
+
+    if (typeof options.stops !== 'undefined') {
+        for (i = 0, iLen = options.stops.length; i < iLen; i++) {
+            gradient.addColorStop(options.stops[i].stop, options.stops[i].color);
+        }
+    } else {
+        for (i = 0, iLen = options.stops.length; i < iLen; i++) {
+            var stop = i / iLen;
+            gradient.addColorStop(stop, options.stops[i]);
+        }
     }
 
     return gradient;
@@ -581,7 +545,7 @@ CocoonText.prototype.updateTexture = function ()
     texture.orig.height = texture._frame.height = this.canvas.height / this.resolution;
 
     texture.trim.x = 0;
-    texture.trim.y = -this._style.padding;
+    texture.trim.y = -this._style.padding * this.resolution;
 
     texture.trim.width = texture._frame.width;
     texture.trim.height = texture._frame.height; //- this._style.padding*2;
@@ -607,8 +571,11 @@ CocoonText.prototype.updateTexture = function ()
  * @param fontStyle {object}
  * @private
  */
-CocoonText.prototype.determineFontProperties = function (fontStyle)
+CocoonText.prototype.determineFontProperties = function (style)
 {
+    var fontSizeString = (typeof style.fontSize === 'number') ? style.fontSize * this.resolution + 'px' : style.fontSize;
+    var fontStyle = style.fontStyle + ' ' + style.fontVariant + ' ' + style.fontWeight + ' ' + fontSizeString + ' ' + style.fontFamily;
+
     var properties = PIXI.Text.fontPropertiesCache[fontStyle];
 
     if (!properties)
@@ -717,7 +684,7 @@ CocoonText.prototype.wordWrap = function (text)
     // than its horizontal bounds.
     var result = '';
     var lines = text.split('\n');
-    var wordWrapWidth = this._generatedStyle.wordWrapWidth;
+    var wordWrapWidth = this._style.wordWrapWidth * this.resolution;
     for (var i = 0; i < lines.length; i++)
     {
         var spaceLeft = wordWrapWidth;
