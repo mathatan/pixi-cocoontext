@@ -548,7 +548,7 @@ CocoonText.prototype.updateTexture = function ()
     texture.trim.y = 0; //-this._style.padding * this.resolution;
 
     texture.trim.width = texture._frame.width;
-    texture.trim.height = texture._frame.height - this._style.padding * 2 * this.resolution;
+    texture.trim.height = texture._frame.height;// - this._style.padding * 2 * this.resolution;
 
     this._width = this.canvas.width / this.resolution;
     this._height = this.canvas.height / this.resolution;
