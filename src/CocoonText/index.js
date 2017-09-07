@@ -443,6 +443,16 @@ CocoonText.prototype.updateText = function ()
             {
                 this.context.fillText(lines[i], linePositionX, linePositionY + style.padding * this.resolution);
             }
+
+            if (style.strikeThrough)
+            {
+
+                var textWidth = this.context.measureText(lines[i]);
+                var y = Math.round(linePositionY - lineHeight / 4);
+
+                this.context.fillRect(linePositionX, y, Math.round(textWidth.width), 2 * this.resolution);
+            }
+
         }
     }
 
