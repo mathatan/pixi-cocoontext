@@ -448,7 +448,7 @@ CocoonText.prototype.updateText = function ()
             {
 
                 var textWidth = this.context.measureText(lines[i]);
-                var y = Math.round(linePositionY - lineHeight / 4);
+                var y = Math.round(linePositionY - lineHeight / 4 + style.padding);
 
                 this.context.fillRect(linePositionX, y, Math.round(textWidth.width), 2 * this.resolution);
             }
